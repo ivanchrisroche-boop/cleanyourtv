@@ -20,23 +20,20 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Apply settings for Xiaomi MiTV-AXSO2
+      - name: Apply settings for OnePlus Y Series (shibuya)
         run: |
           python3 - <<'PY'
           import re
           p = "launcher/app/src/main/res/values/config.xml"
           s = open(p, encoding="utf-8").read()
           dock = ["com.netflix.ninja", "com.amazon.amazonvideo.livingroom", "com.google.android.youtube.tv", "in.startv.hotstar"]
-          hidden = ["com.android.tv", "com.mitv.gallery"]
-          def block(name, items):
-              body = "".join("\n        <item>%s</item>" % i for i in items)
-              return '<string-array name="%s">%s\n    </string-array>' % (name, body)
-          for name, items in (("dock_apps", dock), ("hidden_apps", hidden)):
-              pat = r'<string-array name="%s">.*?</string-array>' % name
-              s, n = re.subn(pat, block(name, items), s, count=1, flags=re.S)
-              assert n == 1, name
-          s, n = re.subn(r'(<string name="live_tv_package"[^>]*>)[^<]*(</string>)', r"\1com.android.tv\2", s, count=1)
-          assert n == 1, "live_tv_package"
+          body = "".join("\n        <item>%s</item>" % i for i in dock)
+          new = '<string-array name="dock_apps">%s\n    </string-array>' % body
+          s, n = re.subn(r'<string-array name="dock_apps">.*?</string-array>', new, s, count=1, flags=re.S)
+          assert n == 1, "dock_apps"
+          # This TV's Live TV app is com.mediatek.wwtv.tvcenter, which is already the project's default
+          # for live_tv_package and hidden_apps, so nothing else is changed.
+          assert 'name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter<' in s
           open(p, "w", encoding="utf-8").write(s)
           PY
 
